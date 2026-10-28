@@ -1,0 +1,39 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.yarncalc.app'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.yarncalc.app"
+        minSdk 21
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+    }
+
+    // Same key as the APK I gave you, so release builds install as updates over it.
+    // (Personal-use key; move the passwords out of this file if you ever publish the project.)
+    signingConfigs {
+        release {
+            storeFile file('yarncalc.keystore')
+            storePassword 'yarncalc123'
+            keyAlias 'yarncalc'
+            keyPassword 'yarncalc123'
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.release
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}

@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#141218">
+  <title>Yarn Calculator</title>
+  <link rel="stylesheet" href="assets/fonts/fonts.css">
+  <style>
+    :root {
+      --font: 'Roboto Flex', 'Noto Sans Devanagari', Roboto, system-ui, sans-serif;
+      --ease: cubic-bezier(.2, 0, 0, 1);
+      --t: .28s var(--ease)
+    }
+
+    [data-theme=dark] {
+      --bg: #141218;
+      --s1: #1d1b20;
+      --s2: #211f26;
+      --s3: #2b2930;
+      --s4: #36343b;
+      --on: #e6e0e9;
+      --on2: #cac4d0;
+      --on3: #948f99;
+      --out: #49454f;
+      --pri: #cfbcff;
+      --onpri: #381e72;
+      --pc: #4f378b;
+      --onpc: #eaddff;
+      --err: #f2b8b5;
+      --shadow: 0 -6px 32px rgba(0, 0, 0, .55)
+    }
+
+    [data-theme=light] {
+      --bg: #fef7ff;
+      --s1: #f7f2fa;
+      --s2: #f3edf7;
+      --s3: #ece6f0;
+      --s4: #e6e0e9;
+      --on: #1d1b20;
+      --on2: #49454f;
+      --on3: #7a757f;
+      --out: #cac4d0;
+      --pri: #6750a4;
+      --onpri: #fff;
+      --pc: #eaddff;
+      --onpc: #21005d;
+      --err: #b3261e;
+      --shadow: 0 -6px 32px rgba(60, 40, 110, .22)
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent
+    }
+
+    html,
+    body {
+      height: 100%;
+      overscroll-behavior: none
+    }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--on);
+      min-height: 100dvh;
+      overflow-x: hidden;
+      transition: background var(--t), color var(--t), padding .3s var(--ease)
+    }
+
+    svg.i {
+      width: 24px;
+      height: 24px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      flex: none
+    }
+
+    button {
+      font-family: inherit;
+      color: inherit;
+      cursor: pointer;
+      border: 0;
+      background: none
+    }
+
+    :focus-visible {
+      outline: 2px solid var(--pri);
+      outline-offset: 2px
+    }
+
+    .scene {
+      display: flex;
+      justify-content: center;
+      padding: max(16px, env(safe-area-inset-top)) 16px 32px;
+      min-height: 100dvh;
+      transition: padding-top .3s var(--ease)
+    }
+
+    .frame {
+      width: 100%;
+      max-width: 440px
+    }
+
+    /* warp-thread texture: vertical hairlines echo the beam of a loom */
+    .appbar {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 18px 8px 20px;
+      background: repeating-linear-gradient(90deg, transparent 0 7px, color-mix(in srgb, var(--pri) 16%, transparent) 7px 8px);
+      -webkit-mask: linear-gradient(#000 55%, transparent);
+      mask: linear-gradient(#000 55%, transparent)
+    }
+
+    .logo {
+      width: 48px;
+      height: 48px;
+      border-radius: 16px;
+      background: var(--pc);
+      color: var(--onpc);
+      display: grid;
+      place-items: center
+    }
+
+    .logo svg {
+      width: 28px;
+      height: 28px
+    }
+
+    .appbar h1 {
+      font-size: 22px;
+      font-weight: 600;
+      line-height: 1.2
+    }
+
+    .appbar p {
+      font-size: 13px;
+      color: var(--on2);
+      margin-top: 2px
+    }
+
+    .appbar .txt {
+      flex: 1;
+      min-width: 0
+    }
+
+    .ibtn {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      color: var(--on2);
+      transition: background .2s
+    }
+
+    .ibtn:hover {
+      background: var(--s3)
+    }
+
+    .ibtn:active {
+      background: var(--s4)
+    }
+
+    .card {
+      background: var(--s1);
+      border-radius: 28px;
+      padding: 20px 18px 22px;
+      margin-top: 4px;
+      transition: background var(--t)
+    }
+
+    .lbl {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .6px;
+      text-transform: uppercase;
+      color: var(--on2);
+      margin: 0 4px 8px;
+      display: block
+    }
+
+    .seg {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      border: 1px solid var(--out);
+      border-radius: 100px;
+      overflow: hidden;
+      margin-bottom: 18px
+    }
+
+    .seg button {
+      height: 44px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--on2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background .2s, color .2s
+    }
+
+    .seg button+button {
+      border-left: 1px solid var(--out)
+    }
+
+    .seg button svg {
+      width: 18px;
+      height: 18px;
+      width: 0;
+      opacity: 0;
+      transition: width .2s, opacity .2s;
+      stroke-width: 2.4
+    }
+
+    .seg button.active {
+      background: var(--pc);
+      color: var(--onpc)
+    }
+
+    .seg button.active svg {
+      width: 18px;
+      opacity: 1
+    }
+
+    .field {
+      position: relative;
+      margin-bottom: 14px
+    }
+
+    .field input {
+      width: 100%;
+      height: 58px;
+      padding: 22px 64px 6px 16px;
+      border: 2px solid transparent;
+      border-radius: 16px;
+      background: var(--s3);
+      color: var(--on);
+      font: 500 17px var(--font);
+      outline: 0;
+      transition: border-color .2s, background .2s;
+      appearance: textfield;
+      -moz-appearance: textfield;
+    }
+
+    .field input::-webkit-outer-spin-button,
+    .field input::-webkit-inner-spin-button {
+      -webkit-appearance: none
+    }
+
+    .field input:focus {
+      border-color: var(--pri)
+    }
+
+    .field label {
+      position: absolute;
+      left: 16px;
+      top: 19px;
+      font-size: 16px;
+      color: var(--on3);
+      pointer-events: none;
+      transform-origin: left top;
+      transition: transform .2s var(--ease), color .2s
+    }
+
+    .field input:focus+label,
+    .field input:not(:placeholder-shown)+label {
+      transform: translateY(-12px) scale(.75)
+    }
+
+    .field input:focus+label {
+      color: var(--pri)
+    }
+
+    .field .suf {
+      position: absolute;
+      right: 16px;
+      top: 20px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--on3);
+      pointer-events: none
+    }
+
+    .btn {
+      height: 56px;
+      border-radius: 100px;
+      font-size: 16px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: transform .15s, filter .2s, background .2s
+    }
+
+    .btn:active {
+      transform: scale(.97)
+    }
+
+    .btn.fill {
+      width: 100%;
+      background: var(--pri);
+      color: var(--onpri);
+      margin-top: 8px;
+      box-shadow: 0 2px 10px color-mix(in srgb, var(--pri) 35%, transparent)
+    }
+
+    .btn.fill:hover {
+      filter: brightness(1.07)
+    }
+
+    .btn.tonal {
+      background: var(--pc);
+      color: var(--onpc);
+      padding: 0 24px;
+      flex: 1
+    }
+
+    .btn.line {
+      border: 1px solid var(--out);
+      color: var(--pri);
+      padding: 0 24px;
+      flex: 1
+    }
+
+    .err {
+      color: var(--err);
+      font-size: 13px;
+      font-weight: 600;
+      text-align: center;
+      min-height: 20px;
+      margin-top: 10px
+    }
+
+    /* ── Sheets ── */
+    .scrim {
+      position: fixed;
+      inset: 0;
+      background: #000;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 40
+    }
+
+    .scrim.t {
+      z-index: 55
+    }
+
+    .sheet {
+      position: fixed;
+      left: 0;
+      right: 0;
+      margin: 0 auto;
+      width: min(100%, 520px);
+      z-index: 50;
+      display: flex;
+      flex-direction: column;
+      background: var(--s2);
+      color: var(--on);
+      box-shadow: var(--shadow);
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      will-change: transform;
+      outline: 0;
+      contain: layout paint
+    }
+
+    .sheet.b {
+      bottom: 0;
+      border-radius: 28px 28px 0 0
+    }
+
+    .sheet.t {
+      top: 0;
+      z-index: 60;
+      border-radius: 0 0 28px 28px;
+      box-shadow: 0 6px 32px rgba(0, 0, 0, .35)
+    }
+
+    .sheet.dragging {
+      cursor: grabbing
+    }
+
+    .sheet *,
+    .scrim {
+      touch-action: none;
+      -webkit-user-drag: none
+    }
+
+    .grip {
+      flex: none;
+      display: grid;
+      place-items: center;
+      height: 32px;
+      width: 100%;
+      cursor: grab
+    }
+
+    .grip::before {
+      content: "";
+      width: 36px;
+      height: 4px;
+      border-radius: 2px;
+      background: var(--on3);
+      opacity: .7;
+      transition: width .2s, opacity .2s
+    }
+
+    .grip:hover::before,
+    .grip:focus-visible::before {
+      width: 48px;
+      opacity: 1
+    }
+
+    .scroller {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      scrollbar-width: thin;
+      padding: 4px 20px 20px;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none
+    }
+
+    .sheet.b .scroller {
+      padding-bottom: max(24px, env(safe-area-inset-bottom))
+    }
+
+    .sheet.t .scroller {
+      padding-top: max(16px, env(safe-area-inset-top))
+    }
+
+    .sum {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 2px 12px 10px 20px
+    }
+
+    .sum .ic {
+      width: 40px;
+      height: 40px;
+      border-radius: 14px;
+      background: var(--pc);
+      color: var(--onpc);
+      display: grid;
+      place-items: center
+    }
+
+    .sum .ic svg {
+      width: 22px;
+      height: 22px
+    }
+
+    .sum .tx {
+      flex: 1;
+      min-width: 0
+    }
+
+    .sum b {
+      display: block;
+      font-size: 17px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis
+    }
+
+    .sum span {
+      font-size: 12.5px;
+      color: var(--on2)
+    }
+
+    .tiles {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin: 6px 0 18px
+    }
+
+    .tile {
+      background: var(--s3);
+      border-radius: 22px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px
+    }
+
+    .tile svg {
+      color: var(--pri);
+      margin-bottom: 8px
+    }
+
+    .tile .k {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .6px;
+      text-transform: uppercase;
+      color: var(--on2)
+    }
+
+    .tile .v {
+      font-size: 30px;
+      font-weight: 600;
+      letter-spacing: -.5px;
+      line-height: 1.15;
+      font-variant-numeric: tabular-nums
+    }
+
+    .tile .u {
+      font-size: 13px;
+      color: var(--on2)
+    }
+
+    .h2 {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .7px;
+      text-transform: uppercase;
+      color: var(--pri);
+      margin: 6px 4px 8px
+    }
+
+    .rows {
+      background: var(--s3);
+      border-radius: 20px;
+      overflow: hidden;
+      margin-bottom: 18px
+    }
+
+    .row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 16px;
+      font-size: 14.5px
+    }
+
+    .row+.row {
+      border-top: 1px solid var(--out)
+    }
+
+    .row span {
+      color: var(--on2)
+    }
+
+    .row b {
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      text-align: right
+    }
+
+    .note {
+      background: var(--s3);
+      border-radius: 20px;
+      padding: 14px 16px;
+      margin-bottom: 12px;
+      font-size: 14px;
+      line-height: 1.5;
+      color: var(--on2)
+    }
+
+    .note b {
+      display: block;
+      color: var(--on);
+      font-size: 14.5px;
+      margin-bottom: 3px
+    }
+
+    .note code {
+      display: block;
+      font: 500 13px/1.5 ui-monospace, Menlo, monospace;
+      color: var(--pri);
+      margin-top: 4px
+    }
+
+    .acts {
+      display: flex;
+      gap: 10px;
+      margin-top: 4px
+    }
+
+    .quick {
+      flex: none;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: max(12px, env(safe-area-inset-top)) 14px 2px 16px
+    }
+
+    .sheet.t .scroller {
+      padding-top: 16px
+    }
+
+    .qseg {
+      display: flex;
+      background: var(--s3);
+      border-radius: 100px;
+      padding: 3px;
+      flex: 1
+    }
+
+    .qseg button {
+      flex: 1;
+      height: 38px;
+      border-radius: 100px;
+      display: grid;
+      place-items: center;
+      color: var(--on2);
+      transition: background .2s, color .2s
+    }
+
+    .qseg button svg {
+      width: 20px;
+      height: 20px
+    }
+
+    .qseg button[aria-pressed=true] {
+      background: var(--pc);
+      color: var(--onpc)
+    }
+
+    .chip {
+      height: 44px;
+      padding: 0 16px;
+      border-radius: 100px;
+      border: 1px solid var(--out);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--on2)
+    }
+
+    .chip svg {
+      width: 20px;
+      height: 20px
+    }
+
+    .sheet.t .scroller {
+      order: -1
+    }
+
+    @media(min-width:600px) {
+      .scene {
+        align-items: center
+      }
+    }
+
+    @media(prefers-reduced-motion:reduce) {
+      * {
+        transition-duration: .01ms !important
+      }
+    }
+  </style>
+</head>
+
+<body data-theme="dark">
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <symbol id="spool" viewBox="0 0 24 24">
+        <rect x="4" y="3" width="16" height="3.5" rx="1.7" />
+        <rect x="4" y="17.5" width="16" height="3.5" rx="1.7" />
+        <path d="M7 6.5v11M17 6.5v11M7 10l10 2.5M7 13.5l10 2.5" />
+      </symbol>
+      <symbol id="sliders" viewBox="0 0 24 24">
+        <path d="M4 7h9M19 7h1M4 17h1M11 17h9" />
+        <circle cx="16" cy="7" r="2.2" />
+        <circle cx="8" cy="17" r="2.2" />
+      </symbol>
+      <symbol id="sun" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="4" />
+        <path
+          d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4" />
+      </symbol>
+      <symbol id="moon" viewBox="0 0 24 24">
+        <path d="M20.5 13.6A8.5 8.5 0 1110.4 3.5a6.7 6.7 0 0010.1 10.1z" />
+      </symbol>
+      <symbol id="auto" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="8.5" />
+        <path d="M12 3.5a8.5 8.5 0 000 17z" fill="currentColor" />
+      </symbol>
+      <symbol id="lang" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="9" />
+        <path d="M3 12h18M12 3c3.2 3.2 3.2 14.8 0 18M12 3c-3.2 3.2-3.2 14.8 0 18" />
+      </symbol>
+      <symbol id="weight" viewBox="0 0 24 24">
+        <circle cx="12" cy="5.8" r="2.6" />
+        <path d="M8.2 8.4h7.6l3.4 11.4H4.8z" />
+      </symbol>
+      <symbol id="ruler" viewBox="0 0 24 24">
+        <rect x="2.5" y="7.5" width="19" height="9" rx="2.2" />
+        <path d="M6.5 7.5v3M10.5 7.5v4.5M14.5 7.5v3M18 7.5v4.5" />
+      </symbol>
+      <symbol id="up" viewBox="0 0 24 24">
+        <path d="M6 14.5l6-6 6 6" />
+      </symbol>
+      <symbol id="close" viewBox="0 0 24 24">
+        <path d="M6 6l12 12M18 6L6 18" />
+      </symbol>
+      <symbol id="copy" viewBox="0 0 24 24">
+        <rect x="9" y="9" width="11" height="11" rx="2.5" />
+        <path d="M5.5 15H5a1.5 1.5 0 01-1.5-1.5V5A1.5 1.5 0 015 3.5h8.5A1.5 1.5 0 0115 5v.5" />
+      </symbol>
+      <symbol id="check" viewBox="0 0 24 24">
+        <path d="M5 12.5l4.5 4.5L19 7.5" />
+      </symbol>
+      <symbol id="calc" viewBox="0 0 24 24">
+        <rect x="4.5" y="3" width="15" height="18" rx="3" />
+        <path d="M8 7.5h8M8.5 12.5h.01M12 12.5h.01M15.5 12.5h.01M8.5 16.5h.01M12 16.5h.01M15.5 16.5h.01" />
+      </symbol>
+    </defs>
+  </svg>
+
+  <main class="scene" id="scene">
+    <div class="frame">
+      <header class="appbar">
+        <div class="logo"><svg class="i">
+            <use href="#spool" />
+          </svg></div>
+        <div class="txt">
+          <h1 id="title">Warping Calculator</h1>
+          <p id="subtitle">Yarn weight &amp; meter estimator</p>
+        </div>
+        <button class="ibtn" id="open-settings" aria-label="Settings"><svg class="i">
+            <use href="#sliders" />
+          </svg></button>
+      </header>
+      <section class="card">
+        <span class="lbl" id="lbl-unit">What to Find</span>
+        <div class="seg" role="group" aria-labelledby="lbl-unit">
+          <button class="active" id="seg-kg" onclick="setUnit('Meter')"><svg class="i">
+              <use href="#check" />
+            </svg><span>Kilogram</span></button>
+          <button id="seg-meter" onclick="setUnit('Kg')"><svg class="i">
+              <use href="#check" />
+            </svg><span>Meter</span></button>
+        </div>
+        <div class="field"><input id="quantity" type="number" inputmode="decimal" placeholder=" "
+            autocomplete="off"><label id="qty-label" for="quantity">Quantity (meters)</label><span class="suf"
+            id="qty-suf">m</span></div>
+        <div class="field"><input id="ends" type="number" inputmode="numeric" placeholder=" " autocomplete="off"><label
+            id="ends-label" for="ends">Number of Ends</label><span class="suf">ends</span></div>
+        <div class="field"><input id="denier" type="number" inputmode="decimal" placeholder=" "
+            autocomplete="off"><label id="denier-label" for="denier">Denier</label><span class="suf">D</span></div>
+        <button class="btn fill" id="calc-btn" onclick="calculate()"><svg class="i">
+            <use href="#calc" />
+          </svg><span id="calc-txt">Calculate</span></button>
+        <div class="err" id="error-msg" role="alert"></div>
+      </section>
+    </div>
+  </main>
+
+  <!-- TopSheet: settings -->
+  <div class="sheet t" id="tsheet" role="dialog" aria-labelledby="set-title" tabindex="-1">
+    <div class="scroller" tabindex="0" aria-label="Guide">
+      <h2 class="h2" id="set-title" data-i="setTitle">Settings &amp; guide</h2>
+      <div class="note"><b data-i="f1">Meters → weight</b><code>kg = ends × m × denier ÷ 9,000,000</code></div>
+      <div class="note"><b data-i="f2">Kilograms → meters</b><code>m = kg ÷ ends ÷ denier × 9,000,000</code></div>
+      <div class="note"><b data-i="ex">Example</b><code>3,000 ends × 5,000 m × 120 D = 200 kg</code></div>
+    </div>
+    <div class="quick peek">
+      <div class="qseg" role="group" aria-label="Theme">
+        <button data-th="light" aria-pressed="false" aria-label="Light" onclick="setTheme('light')"><svg class="i">
+            <use href="#sun" />
+          </svg></button>
+        <button data-th="dark" aria-pressed="true" aria-label="Dark" onclick="setTheme('dark')"><svg class="i">
+            <use href="#moon" />
+          </svg></button>
+        <button data-th="system" aria-pressed="false" aria-label="Auto" onclick="setTheme('system')"><svg class="i">
+            <use href="#auto" />
+          </svg></button>
+      </div>
+      <button class="chip" onclick="toggleLang()"><svg class="i">
+          <use href="#lang" />
+        </svg><span id="lang-label">हिंदी</span></button>
+    </div>
+    <button class="grip peek" id="tgrip" aria-label="Resize settings panel" aria-expanded="false"></button>
+  </div>
+
+  <!-- BottomSheet: results -->
+  <div class="sheet b" id="bsheet" role="dialog" aria-labelledby="res-title" tabindex="-1">
+    <button class="grip peek" id="bgrip" aria-label="Resize results panel" aria-expanded="false"></button>
+    <div class="sum peek">
+      <div class="ic"><svg class="i">
+          <use href="#weight" />
+        </svg></div>
+      <div class="tx"><b id="sum-main">—</b><span id="sum-sub">Based on your inputs</span></div>
+      <button class="ibtn" onclick="closeSheet()" aria-label="Close"><svg class="i">
+          <use href="#close" />
+        </svg></button>
+    </div>
+    <div class="scroller" tabindex="0" aria-label="Results">
+      <h2 class="h2" id="res-title">Calculation Results</h2>
+      <div class="tiles">
+        <div class="tile"><svg class="i">
+            <use href="#weight" />
+          </svg>
+          <div class="k" id="lbl-weight">Weight</div>
+          <div class="v" id="res-weight">—</div>
+          <div class="u" id="unit-weight">kilograms</div>
+        </div>
+        <div class="tile"><svg class="i">
+            <use href="#ruler" />
+          </svg>
+          <div class="k" id="lbl-length">Length</div>
+          <div class="v" id="res-meters">—</div>
+          <div class="u" id="unit-length">meters</div>
+        </div>
+      </div>
+      <h3 class="h2" data-i="bd">Breakdown</h3>
+      <div class="rows">
+        <div class="row"><span data-i="r1">Total yarn length</span><b id="r-total">—</b></div>
+        <div class="row"><span data-i="r2">Weight per end</span><b id="r-end">—</b></div>
+        <div class="row"><span data-i="r3">Weight per 100 m</span><b id="r-100">—</b></div>
+        <div class="row"><span data-i="r4">Inputs</span><b id="r-in">—</b></div>
+      </div>
+      <div class="acts">
+        <button class="btn line" id="copy-btn" onclick="copyResult()"><svg class="i">
+            <use href="#copy" />
+          </svg><span id="copy-txt">Copy</span></button>
+        <button class="btn tonal" id="close-btn" onclick="closeSheet()">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const $ = id => document.getElementById(id), clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+    const ORDER = ['hidden', 'collapsed', 'half', 'expanded'], isModal = s => s === 'half' || s === 'expanded';
+    const probe = document.body.appendChild(Object.assign(document.createElement('div'), {}));
+    probe.style.cssText = 'position:fixed;visibility:hidden;pointer-events:none;padding-bottom:env(safe-area-inset-bottom)';
+    const bottomInset = () => parseFloat(getComputedStyle(probe).paddingBottom) || 0;
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+
+    /* One history entry shared by whichever sheet is modal → hardware Back collapses it */
+    const Modal = {
+      entry: false, active: null, sheets: {},
+      open(id) { if (this.active === id) return; try { history[this.entry ? 'replaceState' : 'pushState']({ sheet: id }, '') } catch (e) { } this.entry = true; this.active = id },
+      close(id) { if (this.active !== id) return; this.active = null; if (this.entry) { this.entry = false; try { history.back() } catch (e) { } } },
+      pop() { if (!this.entry) return; this.entry = false; const a = this.active; this.active = null; a && this.sheets[a].go('collapsed') }
+    };
+    addEventListener('popstate', () => Modal.pop());
+
+    /* Reusable sheet: edge 'bottom' | 'top'. d = how far the sheet is pushed off its edge (0 = expanded). */
+    class Sheet {
+      constructor(el, o) {
+        Object.assign(this, { el, o, id: o.id, s: o.edge === 'top' ? -1 : 1, state: 'hidden', d: 0, pid: null, raf: 0, fl: 0, lock: 0 });
+        this.sc = el.querySelector('.scroller'); this.grip = el.querySelector('.grip');
+        this.scrim = document.createElement('div'); this.scrim.className = 'scrim ' + (this.s < 0 ? 't' : 'b'); document.body.appendChild(this.scrim);
+        this.scrim.addEventListener('click', () => { if (!this.suppress) this.go('collapsed') });
+        this.scrim.addEventListener('pointerdown', e => this.down(e, true));
+        Modal.sheets[this.id] = this; this.measure(); this.setD(this.offs.hidden); this.hide(true);
+        el.addEventListener('pointerdown', e => this.down(e, false));
+        this.mv = e => this.move(e); this.upf = e => this.up(e);
+        el.addEventListener('click', e => { if (this.suppress) { e.stopPropagation(); e.preventDefault() } }, true);
+        this.sc.addEventListener('wheel', e => this.wheel(e), { passive: false });
+        this.grip.addEventListener('click', () => this.go({ hidden: 'collapsed', collapsed: 'half', half: 'expanded', expanded: 'collapsed' }[this.state]));
+        this.grip.addEventListener('keydown', e => this.key(e));
+        el.addEventListener('keydown', e => this.trap(e));
+        addEventListener('resize', () => { if (this.pid != null) { this.rs = 1; return } this.refit() });
+        addEventListener('blur', () => this.abort()); document.addEventListener('visibilitychange', () => document.hidden && this.abort());
+      }
+      measure() {
+        const H = this.H = Math.round(Math.min(innerHeight * this.o.ratio, this.o.max)); this.el.style.height = H + 'px';
+        let peek = [...this.el.querySelectorAll('.peek')].reduce((a, n) => a + n.offsetHeight, 0); if (this.s > 0) peek += bottomInset();
+        this.peek = peek; const vis = Math.max(H * this.o.half, peek + 120);
+        this.offs = { hidden: H + 40, collapsed: H - peek, half: H - vis, expanded: 0 };
+      }
+      refit() { cancelAnimationFrame(this.raf); this.measure(); this.setD(this.offs[this.state]) }
+      abort() { if (this.pid != null) this.up({ pointerId: this.pid, type: 'pointercancel', timeStamp: performance.now() }) }
+      setD(d) {
+        this.d = d; this.el.style.transform = `translate3d(0,${this.s * d}px,0)`;
+        const p = clamp((this.offs.collapsed - d) / (this.offs.collapsed - this.offs.half), 0, 1);
+        this.scrim.style.opacity = p * .5; this.scrim.style.pointerEvents = p > .05 ? 'auto' : 'none';
+      }
+      hide(on) { this.el.inert = on; this.el.style.visibility = on ? 'hidden' : 'visible' }
+      go(state, { v = 0 } = {}) {
+        const prev = this.state; this.state = state;
+        if (isModal(state)) {
+          if (!isModal(prev)) this.opener = document.activeElement;
+          Modal.open(this.id); Object.values(Modal.sheets).forEach(o => o !== this && isModal(o.state) && o.go('collapsed'));
+          if (!isModal(prev)) requestAnimationFrame(() => this.el.focus({ preventScroll: true }));
+        } else {
+          Modal.close(this.id);
+          if (isModal(prev) && this.el.contains(document.activeElement)) { const op = this.opener; op && op.isConnected && op !== document.body ? op.focus({ preventScroll: true }) : document.activeElement.blur() }
+        }
+        this.hide(false); this.grip.setAttribute('aria-expanded', isModal(state)); this.el.dataset.state = state;
+        this.o.onChange && this.o.onChange(state, prev, this);
+        this.animate(this.offs[state], v);
+      }
+      animate(target, v0) {
+        cancelAnimationFrame(this.raf);
+        const done = () => { this.setD(target); this.state === 'hidden' && this.hide(true) };
+        if (reduced.matches) return done();
+        let x = this.d, v = v0 * this.s, last = performance.now(); const k = 430, c = 37; /* ζ≈0.9: quick, settles with a hint of overshoot */
+        const step = t => {
+          let dt = Math.min((t - last) / 1000, 1 / 30); last = t;
+          for (let i = 0; i < 2; i++) { v += (-k * (x - target) - c * v) * dt / 2; x += v * dt / 2 }
+          if (Math.abs(v) < 4 && Math.abs(x - target) < .4) return done();
+          this.setD(x); this.raf = requestAnimationFrame(step);
+        }; this.raf = requestAnimationFrame(step);
+      }
+      /* ── gestures + nested scrolling ── */
+      down(e, fromScrim) {
+        if (e.button > 0 || this.pid != null || this.state === 'hidden') return;
+        cancelAnimationFrame(this.raf); cancelAnimationFrame(this.fl);
+        addEventListener('pointermove', this.mv); addEventListener('pointerup', this.upf); addEventListener('pointercancel', this.upf);
+        Object.assign(this, { pid: e.pointerId, sy: e.clientY, ly: e.clientY, drag: false, scrolled: false, inSc: !fromScrim && this.sc.contains(e.target), smp: [{ t: e.timeStamp, y: e.clientY }] });
+      }
+      move(e) {
+        if (e.pointerId !== this.pid) return;
+        const y = e.clientY;
+        if (!this.drag) {
+          if (Math.abs(y - this.sy) < 5) return;
+          this.drag = true; this.el.classList.add('dragging'); this.ly = y; /* no jump when the threshold is crossed */
+          try { getSelection().removeAllRanges() } catch (_) { }
+        }
+        const dy = y - this.ly; this.ly = y; this.smp.push({ t: e.timeStamp, y }); while (this.smp.length > 2 && e.timeStamp - this.smp[0].t > 100) this.smp.shift();
+        const dd = this.s * dy, sc = this.sc, max = sc.scrollHeight - sc.clientHeight;
+        if (!this.inSc) return this.setD(clamp(this.d + dd, 0, this.offs.hidden));
+        if (dd < 0) { /* expanding: sheet moves first, leftover scrolls the content */
+          const take = Math.min(-dd, Math.max(this.d, 0)); this.setD(this.d - take);
+          const rest = dd + take; if (rest < 0 && max > 0) { const b = sc.scrollTop; sc.scrollTop = b - this.s * rest; this.scrolled = sc.scrollTop !== b || this.scrolled }
+        } else { /* collapsing: content scrolls back to its edge first, then the sheet follows */
+          const room = this.s > 0 ? sc.scrollTop : max - sc.scrollTop, use = Math.min(dd, Math.max(room, 0));
+          if (use > 0) { sc.scrollTop -= this.s * use; this.scrolled = true }
+          if (dd - use > 0) this.setD(clamp(this.d + dd - use, 0, this.offs.hidden));
+        }
+      }
+      up(e) {
+        if (e.pointerId !== this.pid) return; this.pid = null; this.el.classList.remove('dragging');
+        removeEventListener('pointermove', this.mv); removeEventListener('pointerup', this.upf); removeEventListener('pointercancel', this.upf);
+        if (this.rs) { this.rs = 0; this.measure() }
+        if (!this.drag) return; this.suppress = true; setTimeout(() => this.suppress = false, 50);
+        const a = this.smp[0], b = this.smp[this.smp.length - 1];
+        /* finger paused before lifting (or gesture cancelled) → no momentum */
+        let v = (e.type !== 'pointercancel' && b.t > a.t && e.timeStamp - b.t < 90) ? (b.y - a.y) / (b.t - a.t) * 1000 : 0; const vd = this.s * v;
+        const snap = ORDER.find(k => Math.abs(this.offs[k] - this.d) < .5);
+        if (snap === 'expanded' && this.scrolled && Math.abs(v) > 200) { this.go('expanded'); return this.fling(-v) }
+        this.go(snap || this.pick(vd), { v: snap ? 0 : v });
+      }
+      pick(vd) {
+        const d = this.d, proj = d + vd * .14, offs = this.offs;
+        let best = ORDER.reduce((a, k) => Math.abs(offs[k] - proj) < Math.abs(offs[a] - proj) ? k : a);
+        if (Math.abs(vd) > 600) { /* a real flick always moves at least one snap in its direction */
+          const dir = ORDER.filter(k => vd > 0 ? offs[k] > d + 1 : offs[k] < d - 1).sort((p, q) => Math.abs(offs[p] - d) - Math.abs(offs[q] - d));
+          if (dir.length && (vd > 0 ? offs[best] <= d : offs[best] >= d)) best = dir[0];
+        } return best;
+      }
+      fling(v) {
+        let last = performance.now();
+        const step = t => {
+          const dt = Math.min((t - last) / 1000, .05); last = t; const b = this.sc.scrollTop; this.sc.scrollTop += v * dt; v *= Math.exp(-3.4 * dt);
+          if (Math.abs(v) > 20 && this.sc.scrollTop !== b) this.fl = requestAnimationFrame(step)
+        };
+        this.fl = requestAnimationFrame(step);
+      }
+      wheel(e) { /* mouse wheel: first expand the sheet, then let the content scroll natively */
+        const expand = this.s > 0 ? e.deltaY > 0 : e.deltaY < 0;
+        if (expand && this.state !== 'expanded' && this.state !== 'hidden') {
+          e.preventDefault();
+          if (performance.now() > this.lock) { this.lock = performance.now() + 380; this.go(ORDER[ORDER.indexOf(this.state) + 1]) }
+        }
+      }
+      key(e) {
+        const i = ORDER.indexOf(this.state), up = this.s > 0 ? 'ArrowUp' : 'ArrowDown', dn = this.s > 0 ? 'ArrowDown' : 'ArrowUp';
+        let n = null;
+        if (e.key === up && i < 3) n = ORDER[i + 1]; else if (e.key === dn && i > 0) n = ORDER[i - 1];
+        else if (e.key === 'Home') n = 'expanded'; else if (e.key === 'End') n = 'collapsed';
+        if (n) { e.preventDefault(); this.go(n) }
+      }
+      trap(e) {
+        if (e.key !== 'Tab' || !isModal(this.state)) return;
+        const f = [...this.el.querySelectorAll('button,[tabindex="0"]')].filter(n => n.offsetParent !== null);
+        if (!f.length) return; const first = f[0], last = f[f.length - 1];
+        if (e.shiftKey && (document.activeElement === first || document.activeElement === this.el)) { e.preventDefault(); last.focus() }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus() }
+      }
+    }
+
+    const pad = (sheet, prop) => (state) => { document.documentElement.style.setProperty(prop, state === 'hidden' ? '0px' : sheet.peek + 'px') };
+    const resultSheet = new Sheet($('bsheet'), {
+      id: 'result', edge: 'bottom', ratio: .92, max: 660, half: .56,
+      onChange: (st, _, sh) => { document.body.style.paddingBottom = st === 'hidden' ? '0px' : (sh.peek + 8) + 'px' }
+    });
+    const settingsSheet = new Sheet($('tsheet'), {
+      id: 'settings', edge: 'top', ratio: .8, max: 560, half: .6,
+      onChange: (st, _, sh) => { $('scene').style.paddingTop = st === 'hidden' ? '' : `calc(${sh.peek}px + 8px)` }
+    });
+    $('open-settings').addEventListener('click', () => settingsSheet.go(settingsSheet.state === 'hidden' ? 'half' : 'hidden'));
+
+    /* ── Theme ── */
+    const mq = matchMedia('(prefers-color-scheme: light)');
+    let currentTheme = 'dark'; try { currentTheme = localStorage.getItem('wc-theme') || 'dark' } catch (e) { }
+    function applyTheme(t) {
+      const r = t === 'system' ? (mq.matches ? 'light' : 'dark') : t; document.body.setAttribute('data-theme', r);
+      document.querySelector('meta[name=theme-color]').content = r === 'dark' ? '#141218' : '#fef7ff'; try { window.Android && Android.setTheme(r) } catch (e) { }
+    }
+    function setTheme(t) {
+      currentTheme = t; applyTheme(t); try { localStorage.setItem('wc-theme', t) } catch (e) { }
+      document.querySelectorAll('[data-th]').forEach(b => b.setAttribute('aria-pressed', b.dataset.th === t))
+    }
+    mq.addEventListener('change', () => { if (currentTheme === 'system') applyTheme('system') });
+    setTheme(currentTheme);
+
+    /* ── Language ── */
+    let isHindi = false, currentUnit = 'Meter', last = null;
+    const S = {
+      en: {
+        langLabel: 'हिंदी', title: 'Warping Calculator', subtitle: 'Yarn weight & meter estimator', lblUnit: 'What to Find', segMeter: 'Meter', segKg: 'Kilogram',
+        qtyLbl: u => u === 'Meter' ? 'Quantity (meters)' : 'Quantity (kilograms)', endsLbl: 'Number of Ends', denierLbl: 'Denier', calcBtn: 'Calculate', errMsg: 'Please fill all values correctly',
+        resTitle: 'Calculation Results', wLbl: 'Weight', wUnit: 'kilograms', lLbl: 'Length', lUnit: 'meters', closeBtn: 'Done', sub: 'Based on your inputs', copy: 'Copy', copied: 'Copied',
+        setTitle: 'Settings & guide', f1: 'Meters → weight', f2: 'Kilograms → meters', f3: 'About denier', f3t: 'Denier is the weight in grams of 9,000 m of yarn.', ex: 'Example', gs: 'Gestures',
+        gst: "Drag a panel's handle or swipe it to peek, half-open or expand. Press Esc or Back to close.", bd: 'Breakdown', r1: 'Total yarn length', r2: 'Weight per end', r3: 'Weight per 100 m', r4: 'Inputs'
+      },
+      hi: {
+        langLabel: 'English', title: 'वार्पिंग कैलकुलेटर', subtitle: 'यार्न वजन और मीटर अनुमानक', lblUnit: 'क्या पता करें', segMeter: 'मीटर', segKg: 'किलोग्राम',
+        qtyLbl: u => u === 'Meter' ? 'मात्रा (मीटर)' : 'मात्रा (किलोग्राम)', endsLbl: 'तारों की संख्या', denierLbl: 'डेनियर', calcBtn: 'गणना करें', errMsg: 'कृपया सभी मान सही भरें',
+        resTitle: 'गणना परिणाम', wLbl: 'वजन', wUnit: 'किलोग्राम', lLbl: 'लंबाई', lUnit: 'मीटर', closeBtn: 'हो गया', sub: 'आपके इनपुट के आधार पर', copy: 'कॉपी', copied: 'कॉपी हुआ',
+        setTitle: 'सेटिंग्स और गाइड', f1: 'मीटर → वजन', f2: 'किलोग्राम → मीटर', f3: 'डेनियर क्या है', f3t: 'डेनियर 9,000 मीटर यार्न का ग्राम में वजन है।', ex: 'उदाहरण', gs: 'जेस्चर',
+        gst: 'पैनल का हैंडल खींचें या स्वाइप करें। बंद करने के लिए Esc या Back दबाएँ।', bd: 'विवरण', r1: 'कुल यार्न लंबाई', r2: 'प्रति तार वजन', r3: 'प्रति 100 मीटर वजन', r4: 'इनपुट'
+      }
+    };
+    const T = () => isHindi ? S.hi : S.en, txt = (id, v) => { $(id).textContent = v };
+    function render() {
+      const s = T(); document.documentElement.lang = isHindi ? 'hi' : 'en';
+      txt('lang-label', s.langLabel); txt('title', s.title); txt('subtitle', s.subtitle); txt('lbl-unit', s.lblUnit);
+      $('seg-meter').lastElementChild.textContent = s.segMeter; $('seg-kg').lastElementChild.textContent = s.segKg;
+      txt('qty-label', s.qtyLbl(currentUnit)); txt('ends-label', s.endsLbl); txt('denier-label', s.denierLbl); txt('calc-txt', s.calcBtn);
+      txt('res-title', s.resTitle); txt('lbl-weight', s.wLbl); txt('unit-weight', s.wUnit); txt('lbl-length', s.lLbl); txt('unit-length', s.lUnit);
+      txt('close-btn', s.closeBtn); txt('copy-txt', s.copy);
+      document.querySelectorAll('[data-i]').forEach(n => n.textContent = s[n.dataset.i]);
+      if (!last) txt('sum-sub', s.sub); else fill();
+    }
+    function toggleLang() { isHindi = !isHindi; render() }
+
+    /* ── Unit ── */
+    function setUnit(u) {
+      currentUnit = u;
+      $('seg-kg').classList.toggle('active', u === 'Meter'); $('seg-meter').classList.toggle('active', u === 'Kg');
+      txt('qty-label', T().qtyLbl(u)); txt('qty-suf', u === 'Meter' ? 'm' : 'kg')
+    }
+
+    /* ── Calculate (formulas unchanged) ── */
+    function calculate() {
+      const q = parseFloat($('quantity').value), e = parseFloat($('ends').value), d = parseFloat($('denier').value);
+      if (!q || !e || !d || q <= 0 || e <= 0 || d <= 0) { txt('error-msg', T().errMsg); shakeBtn(); return }
+      txt('error-msg', '');
+      let weight, meters;
+      if (currentUnit === 'Meter') { meters = q; weight = (e * meters * d) / 9000000 } else { weight = q; meters = (weight / e / d) * 9000000 }
+      last = { q, e, d, weight, meters, unit: currentUnit }; fill();
+      requestAnimationFrame(() => { document.activeElement && document.activeElement.blur(); resultSheet.go(resultSheet.state === 'expanded' ? 'expanded' : 'half') });
+    }
+    function fill() {
+      const { q, e, d, weight, meters, unit } = last, f = (n, m = 2) => n.toLocaleString(undefined, { maximumFractionDigits: m });
+      const inp = unit === 'Meter' ? `${q.toLocaleString()} m · ${e} ends · ${d} denier` : `${q} kg · ${e} ends · ${d} denier`;
+      txt('res-weight', weight.toFixed(3)); txt('res-meters', Math.round(meters).toLocaleString());
+      txt('sum-main', `${weight.toFixed(3)} kg · ${Math.round(meters).toLocaleString()} m`); txt('sum-sub', inp);
+      txt('r-total', `${f(e * meters, 0)} m`); txt('r-end', `${f(weight * 1000 / e, 3)} g`); txt('r-100', `${f(e * 100 * d / 9000000, 3)} kg`); txt('r-in', inp);
+    }
+    function closeSheet() { resultSheet.go('hidden') }
+    async function copyResult() {
+      if (!last) return; const t = `${T().title}: ${last.weight.toFixed(3)} kg, ${Math.round(last.meters).toLocaleString()} m (${$('r-in').textContent})`;
+      try { if (window.Android && Android.copy) Android.copy(t); else await navigator.clipboard.writeText(t) } catch (e) { const a = Object.assign(document.createElement('textarea'), { value: t }); document.body.appendChild(a); a.select(); try { document.execCommand('copy') } catch (_) { } a.remove() }
+      txt('copy-txt', T().copied); setTimeout(() => txt('copy-txt', T().copy), 1400);
+    }
+    function shakeBtn() {
+      const b = $('calc-btn'), seq = [5, -5, 4, -4, 2, -2, 0]; let i = 0; b.style.transition = 'transform .06s';
+      const t = setInterval(() => { b.style.transform = `translateX(${seq[i]}px)`; if (++i >= seq.length) { clearInterval(t); b.style.transition = '' } }, 55)
+    }
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') { const m = [settingsSheet, resultSheet].find(s => isModal(s.state)); if (m) m.go('collapsed'); else if (settingsSheet.state === 'collapsed') settingsSheet.go('hidden'); return }
+      if (e.key === 'Enter' && !e.target.closest('button,a,[role=dialog]'))
+        isModal(resultSheet.state) ? closeSheet() : calculate();
+    });
+    render();
+  </script>
+</body>
+
+</html>
